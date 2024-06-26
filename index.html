@@ -33,11 +33,19 @@
       padding: 10px;
       background-color: #333;
       color: #fff;
-      border: none;
+      border: 2px solid transparent;
+      border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
     #buttons button:hover {
       background-color: #555;
+    }
+    #buttons button.selected {
+      background-color: #007BFF;
+      border-color: #0056b3;
+      color: #fff;
+      font-weight: bold;
     }
     pre {
       flex: 1;
@@ -60,6 +68,8 @@
   <pre id="log"></pre>
   <script>
     const logElement = document.getElementById('log');
+    const viewNetworkLogsButton = document.getElementById('viewNetworkLogsButton');
+    let isNetworkLogsSelected = false;
     
     window.electronAPI.onAdbLog((event, log) => {
       logElement.textContent += log + '\n';
@@ -70,10 +80,15 @@
       logElement.textContent = '';
     });
 
-    document.getElementById('viewNetworkLogsButton').addEventListener('click', () => {
-      const filterValue = 'business'; // 您可以根据需要修改这个值
-      // 通知 Electron 进行网络日志过滤，并传递 filterValue
-      window.electronAPI.filterMessage(filterValue);
+    viewNetworkLogsButton.addEventListener('click', () => {
+      isNetworkLogsSelected = !isNetworkLogsSelected;
+      if (isNetworkLogsSelected) {
+        viewNetworkLogsButton.classList.add('selected');
+        window.electronAPI.filterMessage('business'); // 设置过滤值
+      } else {
+        viewNetworkLogsButton.classList.remove('selected');
+        window.electronAPI.filterMessage(null); // 清除过滤值
+      }
     });
   </script>
 </body>

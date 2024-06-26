@@ -1,26 +1,43 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const adb = require('adbkit');
-const client = adb.createClient({ host: '127.0.0.1', port: 5037 });
+const { app, BrowserWindow, ipcMain } = require("electron");
+const path = require("path");
+const adb = require("adbkit");
+const os = require('os');
 
 let messageFilterKey = null; // message日志过滤key
+
+// 根据操作系统设置ADB路径
+let adbPath;
+if (os.platform() === "win32") {
+  adbPath = path.join(__dirname, "bin", "adb", "win", "adb.exe");
+} else if (os.platform() === "darwin") {
+  adbPath = path.join(__dirname, "bin", "adb", "mac", "adb");
+} else {
+  throw new Error("Unsupported OS");
+}
+
+const client = adb.createClient({
+  bin: adbPath,
+  host: "127.0.0.1",
+  port: 5037,
+});
 
 function createWindow() {
   currentWin = new BrowserWindow({
     width: 1200,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       enableRemoteModule: false,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
   });
 
-  currentWin.loadFile('index.html');
+  currentWin.loadFile("index.html");
   currentWin.webContents.openDevTools();
 
-  ipcMain.handle('filterMessage', async (event, filterValue) => {
+  ipcMain.handle("filterMessage", async (_event, filterValue) => {
+    console.log(filterValue);
     messageFilterKey = filterValue;
   });
 }
@@ -31,20 +48,21 @@ let currentWin = null;
 
 function monitorDevices() {
   // setInterval(startAdbLogcat, 2000); // Check every 2 seconds
-  client.trackDevices()
-    .then(tracker => {
-      tracker.on('add', device => {
+  client
+    .trackDevices()
+    .then((tracker) => {
+      tracker.on("add", (device) => {
         console.log(`Device ${device.id} was added`);
       });
 
-      tracker.on('remove', device => {
+      tracker.on("remove", (device) => {
         console.log(`Device ${device.id} was removed`);
         if (device.id === monitoredDeviceId) {
           stopLogcat();
         }
       });
 
-      tracker.on('change', device => {
+      tracker.on("change", (device) => {
         console.log(`Device ${device.id} state changed to ${device.type}`);
         if (device.type === "device") {
           if (!logcatStream) {
@@ -55,20 +73,21 @@ function monitorDevices() {
         }
       });
 
-      tracker.on('end', () => {
-        console.log('Tracking devices stopped');
+      tracker.on("end", () => {
+        console.log("Tracking devices stopped");
       });
 
-      tracker.on('error', err => {
-        console.error('Tracking devices encountered an error:', err.stack);
+      tracker.on("error", (err) => {
+        console.error("Tracking devices encountered an error:", err.stack);
       });
     })
-    .catch(err => {
-      console.error('Something went wrong:', err.stack);
+    .catch((err) => {
+      console.error("Something went wrong:", err.stack);
     });
 
-  client.listDevices()
-    .then(devices => {
+  client
+    .listDevices()
+    .then((devices) => {
       if (devices.length > 0) {
         const device = devices[0];
         if (!logcatStream) {
@@ -78,40 +97,39 @@ function monitorDevices() {
         }
       }
     })
-    .catch(err => console.error('ADB Error:', err));
+    .catch((err) => console.error("ADB Error:", err));
 }
 
 function startLogcat(deviceId) {
-  client.openLogcat(deviceId, { clear: true })
-    .then(logcat => {
+  client
+    .openLogcat(deviceId, { clear: true })
+    .then((logcat) => {
       logcatStream = logcat;
-      logcat.on('entry', entry => {
-
+      logcat.on("entry", (entry) => {
         if (messageFilterKey) {
           if (entry.message.toLowerCase().includes(messageFilterKey)) {
             const log = `${entry.date} ${entry.pid}-${entry.tid} ${entry.tag} ${entry.message}`;
             try {
-              currentWin.webContents.send('adb-log', log);
-            } catch (e) {
-
-            }
+              currentWin.webContents.send("adb-log", log);
+            } catch (e) {}
           }
         } else {
           const log = `${entry.date} ${entry.pid}-${entry.tid} ${entry.tag} ${entry.message}`;
           try {
-            currentWin.webContents.send('adb-log', log);
-          } catch (e) {
-
-          }
+            currentWin.webContents.send("adb-log", log);
+          } catch (e) {}
         }
       });
 
-      logcat.on('error', err => {
-        console.error(`Logcat encountered an error on device ${deviceId}:`, err.stack);
+      logcat.on("error", (err) => {
+        console.error(
+          `Logcat encountered an error on device ${deviceId}:`,
+          err.stack
+        );
         stopLogcat(); // 关闭 logcat 流
       });
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(`Failed to open logcat on device ${deviceId}:`, err.stack);
     });
 }
@@ -129,11 +147,11 @@ app.whenReady().then(() => {
   createWindow();
   monitorDevices();
 
-  app.on('activate', function () {
+  app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
+app.on("window-all-closed", function () {
+  if (process.platform !== "darwin") app.quit();
 });
