@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-repository-url.git"
+    "url": "https://github.com/radishwu/adb-logcat-viewer.git"
   },
   "keywords": [
     "electron",
@@ -16,7 +16,7 @@
     "logcat",
     "viewer"
   ],
-  "author": "Your Name",
+  "author": "yangwoo",
   "license": "MIT",
   "devDependencies": {
     "electron": "^25.0.0"

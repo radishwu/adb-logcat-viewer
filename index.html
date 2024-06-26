@@ -22,6 +22,23 @@
       color: #fff;
       text-align: center;
     }
+    #buttons {
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      background-color: #f3f3f3;
+    }
+    #buttons button {
+      margin: 0 10px;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    #buttons button:hover {
+      background-color: #555;
+    }
     pre {
       flex: 1;
       margin: 0;
@@ -36,6 +53,10 @@
 </head>
 <body>
   <h1>ADB Logcat Viewer</h1>
+  <div id="buttons">
+    <button id="clearButton">Clear Logs</button>
+    <button id="viewNetworkLogsButton">查看网络日志</button>
+  </div>
   <pre id="log"></pre>
   <script>
     const logElement = document.getElementById('log');
@@ -43,6 +64,16 @@
     window.electronAPI.onAdbLog((event, log) => {
       logElement.textContent += log + '\n';
       logElement.scrollTop = logElement.scrollHeight;
+    });
+
+    document.getElementById('clearButton').addEventListener('click', () => {
+      logElement.textContent = '';
+    });
+
+    document.getElementById('viewNetworkLogsButton').addEventListener('click', () => {
+      const filterValue = 'business'; // 您可以根据需要修改这个值
+      // 通知 Electron 进行网络日志过滤，并传递 filterValue
+      window.electronAPI.filterMessage(filterValue);
     });
   </script>
 </body>
