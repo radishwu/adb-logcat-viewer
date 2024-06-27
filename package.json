@@ -4,7 +4,8 @@
   "description": "A simple Electron application to display ADB logcat logs.",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "package-mac": "npx electron-packager . adb-logcat-viewer --platform=darwin --arch=x64 --out=dist --overwrite --extra-resource=bin/adb/"
   },
   "repository": {
     "type": "git",
